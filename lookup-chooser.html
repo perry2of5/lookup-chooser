@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+
+        /* Custom Scrollbar styling for the specific lists to maintain a clean look */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+
+        /* Animation utilities */
+        .fade-enter { opacity: 0; transform: scale(0.95); pointer-events: none; }
+        .fade-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-6">
+
+<!-- Main Application Container -->
+<main class="w-full max-w-5xl mx-auto animate-in fade-in duration-500">
+
+    <!-- Section: Form Entry -->
+    <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+        <div class="p-8">
+            <header class="mb-6 border-b border-gray-100 pb-4">
+                <h1 class="text-2xl font-bold text-gray-900">Edit Employee Record</h1>
+                <p class="text-sm text-gray-500 mt-1">Configure assignment details and selection parameters.</p>
+            </header>
+
+            <!-- Input Group: Step 1 (Value Selection) -->
+            <div class="mb-2">
+                <label for="targetInput" class="block text-sm font-semibold text-gray-700 mb-2">Target Assignment</label>
+
+                <div class="relative flex items-center w-full max-w-xl shadow-sm rounded-lg overflow-hidden ring-1 ring-gray-300 focus-within:ring-2
+focus-within:ring-blue-500 transition-shadow">
+
+                    <!-- Input Field -->
+                    <input
+                        type="text"
+                        id="targetInput"
+                        class="w-full pl-4 pr-4 py-3 bg-transparent border-none outline-none text-gray-700 placeholder-gray-400 text-base"
+                        placeholder="Enter Value or Select Lookup..."
+                    >
+
+                    <!-- Toggle Button -->
+                    <button
+                        onclick="toggleLookupDialog()"
+                        id="lookupBtn"
+                        class="bg-white hover:bg-gray-50 text-gray-600 font-medium py-3 px-6 border-l border-gray-200 transition-colors flex items-center
+gap-2 focus:outline-none outline-none z-10 relative"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <span class="uppercase text-xs tracking-wide">Lookup</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- Master-Detail Dialog Overlay -->
+<div id="backdrop" onclick="closeLookupDialog()" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden z-50 transition-opacity duration-300"></div>
+
+<!-- The Modal Container (Centered via fixed positioning) -->
+<div
+    id="lookupDialog"
+    class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[768px] h-[550px] bg-white rounded-xl shadow-2xl ring-1 ring-black
+ring-opacity-5 hidden z-50 flex overflow-hidden fade-enter"
+    role="dialog"
+    aria-modal="true"
+>
+
+    <!-- MASTER COLUMN (Left: Categories) -->
+    <aside class="w-64 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
+        <!-- Header -->
+        <div class="p-4 border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
+            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Categories</h3>
+        </div>
+
+        <!-- Scrollable List -->
+        <ul class="overflow-y-auto flex-1 custom-scroll py-2 space-y-1">
+            <!-- Active Item -->
+            <li class="px-4 py-3 bg-blue-50 border-r-4 border-blue-600 cursor-pointer text-blue-700 font-medium flex justify-between items-center group
+transition-colors">
+                <span>Locations</span>
+                <span class="bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full text-xs font-semibold">12</span>
+            </li>
+
+            <!-- Inactive Items -->
+            <li class="px-4 py-3 hover:bg-gray-100 cursor-pointer text-gray-600 group flex justify-between items-center transition-colors border-r-4
+border-transparent">
+                <span>Departments</span>
+            </li>
+            <li class="px-4 py-3 hover:bg-gray-100 cursor-pointer text-gray-600 group flex justify-between items-center transition-colors border-r-4
+border-transparent">
+                <span>Project Codes</span>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- DETAIL COLUMN (Right: Results) -->
+    <section class="w-[calc(100%-16rem)] flex flex-col h-full bg-white relative">
+
+        <!-- Header & Search Bar Area -->
+        <header class="p-5 border-b border-gray-100 bg-white sticky top-0 z-20 shadow-sm flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800 leading-tight">Locations</h3>
+                    <p class="text-xs text-gray-500 mt-1">Select an item to populate the field.</p>
+                </div>
+                <button onclick="closeLookupDialog()" class="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-full transition-all"
+aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- STEP 2 SEARCH FUNCTIONALITY -->
+            <div class="relative w-full max-w-md mx-auto lg:mx-0">
+                <input
+                    type="text"
+                    id="detailSearchInput"
+                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500
+focus:border-transparent outline-none transition-all shadow-inner"
+                    placeholder="Filter results..."
+                >
+                <div class="absolute left-3 top-2.5 pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+            </div>
+        </header>
+
+        <!-- Result List Area -->
+        <div class="flex-1 overflow-y-auto custom-scroll p-2">
+            <ul class="space-y-1">
+                <!-- List Item 1 -->
+                <li onclick="selectValue('London, UK')" class="px-4 py-3 hover:bg-blue-50 group cursor-pointer border rounded-lg transition-all
+duration-150 flex items-center justify-between border-gray-100 hover:border-blue-200">
+                    <div>
+                        <p class="font-medium text-gray-800">London, United Kingdom</p>
+                        <p class="text-xs text-gray-400">European Region • HQ Building</p>
+                    </div>
+                    <span class="opacity-0 group-hover:opacity-100 bg-blue-600 text-white p-1 rounded-md transition-opacity shadow-sm" title="Select">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </span>
+                </li>
+
+                <!-- List Item 2 -->
+                <li onclick="selectValue('New York, US')" class="px-4 py-3 hover:bg-blue-50 group cursor-pointer border rounded-lg transition-all
+duration-150 flex items-center justify-between border-gray-100 hover:border-blue-200">
+                    <div>
+                        <p class="font-medium text-gray-800">New York, USA</p>
+                        <p class="text-xs text-gray-400">North American Region • Times Square</p>
+                    </div>
+                    <span class="opacity-0 group-hover:opacity-100 bg-blue-600 text-white p-1 rounded-md transition-opacity shadow-sm" title="Select">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </span>
+                </li>
+                 <!-- List Item 3 -->
+                 <li onclick="selectValue('Tokyo, JP')" class="px-4 py-3 hover:bg-blue-50 group cursor-pointer border rounded-lg transition-all
+duration-150 flex items-center justify-between border-gray-100 hover:border-blue-200">
+                    <div>
+                        <p class="font-medium text-gray-800">Tokyo, Japan</p>
+                        <p class="text-xs text-gray-400">Asia Pacific Region • Shibuya Crossing</p>
+                    </div>
+                    <span class="opacity-0 group-hover:opacity-100 bg-blue-600 text-white p-1 rounded-md transition-opacity shadow-sm" title="Select">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </span>
+                </li>
+            </ul>
+        </div>
+
+    </section>
+</div>
+
+<script>
+    const dialog = document.getElementById('lookupDialog');
+    const backdrop = document.getElementById('backdrop');
+
+    function toggleLookupDialog() {
+        if (dialog.classList.contains('hidden')) {
+            openLookupDialog();
+        } else {
+            closeLookupDialog();
+        }
+    }
+
+    function openLookupDialog() {
+        dialog.classList.remove('hidden');
+        backdrop.classList.remove('hidden');
+
+        // Trigger animation reflow
+        requestAnimationFrame(() => {
+            dialog.classList.add('fade-enter-active');
+            // Optional: Focus the search input for immediate interaction
+            document.getElementById('detailSearchInput').focus();
+        });
+    }
+
+    function closeLookupDialog() {
+        dialog.classList.remove('fade-enter-active');
+
+        setTimeout(() => {
+            dialog.classList.add('hidden');
+            backdrop.classList.add('hidden');
+        }, 200); // Wait for transition to end before hiding
+    }
+
+    function selectValue(val) {
+        const input = document.getElementById('targetInput');
+        input.value = val;
+
+        // Visual feedback animation on the main input
+        input.classList.add('text-green-600', 'transition-colors');
+        setTimeout(() => input.classList.remove('text-green-600'), 500);
+
+        closeLookupDialog();
+    }
+
+    // Close dialog on Escape key press
+    document.addEventListener('keydown', function(event) {
+        if (event.key === "Escape" && !dialog.classList.contains('hidden')) {
+            closeLookupDialog();
+        }
+    });
+</script>
+
+</body>
+</html>
