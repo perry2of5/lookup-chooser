@@ -1,9 +1,9 @@
  # Implementation Decisions
 
 ## Dialog Behavior
-- [ ] Close on backdrop click vs. require explicit action
+- [x] Close on backdrop click vs. require explicit action
 - [ ] Animation duration (currently 200ms) - tune for perceived performance
-- [ ] Focus management: auto-focus search input on open
+- [x] Focus management: auto-focus search input on open
 
 ## Data Loading
 - [ ] Static data vs. API fetch for categories/items
@@ -11,25 +11,25 @@
 - [ ] Error handling: toast notification or inline message
 
 ## Category Switching
-- [ ] Preload all categories or lazy-load on selection
-- [ ] Preserve search filter when switching categories
-- [ ] Show item count badge per category (currently hardcoded)
+- [x] Preload all categories or lazy-load on selection
+- [x] Preserve search filter when switching categories
+- [x] Show item count badge per category (currently hardcoded)
 
 ## Search Functionality
-- [ ] Filter logic: substring match, case-insensitive (default)
+- [x] Filter logic: substring match, case-insensitive (default)
 - [ ] Debounce search input (ms threshold)
 - [ ] Highlight matched text in results
-- [ ] "No results" state messaging
+- [x] "No results" state messaging
 
 ## Value Selection
 - [ ] Click vs. Enter key to select (currently click only)
-- [ ] Return full object or display string to input
-- [ ] Allow clearing selected value from dialog
+- [x] Return full object or display string to input
+- [x] Allow clearing selected value from main control
 
 ## Keyboard Navigation
 - [ ] Arrow keys to navigate result list
 - [ ] Tab order: input → lookup button → dialog elements
-- [ ] Escape closes dialog (implemented)
+- [x] Escape closes dialog (implemented)
 
 ## Responsive Design
 - [ ] Mobile: full-screen dialog vs. current fixed size
@@ -109,3 +109,17 @@ to prevent browser default styles from breaking the clean visual design.
 ### 11. Event Handling Safety
 *   **Decision:** Row click handlers in dynamic lists use JavaScript closures (`li.onclick = ...`) instead of inline HTML `onclick` strings.
 *   **Rationale:** Avoids escaping bugs for values containing quotes/newlines (for example SSH key material).
+
+### 12. Reopen Behavior: Return to Prior Target Context
+*   **Decision:** Reopening the dialog restores the last selected category and target sub-target view when available.
+    *   If prior target context exists: open directly to sub-targets for that target.
+    *   If prior target context is missing/invalid: fall back to category target list.
+*   **Rationale:** Supports quick reselection in the same area without forcing extra clicks.
+
+### 13. Up-Level Navigation from Sub-Targets
+*   **Decision:** Added a Back to targets control in the detail header while viewing sub-targets.
+*   **Rationale:** Users can move up one level inside the same category without switching categories.
+
+### 14. Stable Control Height Across States
+*   **Decision:** The lookup path row under the input always reserves vertical space and toggles visibility instead of entering/leaving layout flow.
+*   **Rationale:** Prevents the input/control block from shifting height when toggling between manual and lookup-locked states.

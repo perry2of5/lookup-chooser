@@ -91,7 +91,7 @@ gap-2 focus:outline-none outline-none z-10 relative"
                         <span class="uppercase text-xs tracking-wide">Lookup</span>
                     </button>
                 </div>
-                <p id="lookupPathDisplay" class="hidden mt-2 text-xs text-gray-500"></p>
+                <p id="lookupPathDisplay" class="mt-2 h-4 text-xs leading-4 text-gray-500 invisible"></p>
             </div>
         </div>
     </section>
@@ -130,6 +130,9 @@ ring-opacity-5 hidden z-50 flex overflow-hidden fade-enter"
         <header class="p-5 border-b border-gray-100 bg-white sticky top-0 z-20 shadow-sm flex flex-col gap-4">
             <div class="flex justify-between items-center">
                 <div>
+                    <button id="backToTargetsBtn" type="button" onclick="navigateToTargets()" class="hidden mb-1 text-xs text-blue-600 hover:text-blue-800">
+                        Back to targets
+                    </button>
                     <h3 id="targetTitle" class="text-lg font-bold text-gray-800 leading-tight">Select a Category</h3>
                     <p id="targetDescription" class="text-xs text-gray-500 mt-1">Choose a category to view available targets.</p>
                 </div>
@@ -239,6 +242,7 @@ focus:border-transparent outline-none transition-all shadow-inner"
 
     let currentCategory = null;
     let currentTarget = null;
+    let currentView = 'targets';
     let isLookupLocked = false;
     let previousManualValue = '';
 
@@ -247,6 +251,7 @@ focus:border-transparent outline-none transition-all shadow-inner"
     const targetInput = document.getElementById('targetInput');
     const clearLookupBtn = document.getElementById('clearLookupBtn');
     const lookupPathDisplay = document.getElementById('lookupPathDisplay');
+    const backToTargetsBtn = document.getElementById('backToTargetsBtn');
     const categoryList = document.getElementById('categoryList');
     const targetTitle = document.getElementById('targetTitle');
     const targetDescription = document.getElementById('targetDescription');
@@ -259,6 +264,7 @@ focus:border-transparent outline-none transition-all shadow-inner"
 
         Object.entries(lookupData).forEach(([key, category]) => {
             const li = document.createElement('li');
+            li.dataset.categoryKey = key;
             li.className = 'px-4 py-3 hover:bg-gray-100 cursor-pointer text-gray-600 group flex justify-between items-center transition-colors border-r-4 border-transparent has-subtargets';
             li.innerHTML = `
                 <span class="flex items-center gap-2">
@@ -267,24 +273,41 @@ focus:border-transparent outline-none transition-all shadow-inner"
                 </span>
                 <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs font-semibold">${Object.keys(category.targets).length}</span>
             `;
-            li.onclick = () => selectCategory(key, category);
+            li.onclick = () => selectCategory(key, category, li);
             categoryList.appendChild(li);
         });
     }
 
-    // Select a category and show its targets
-    function selectCategory(categoryKey, category) {
-        currentCategory = categoryKey;
-
-        // Update active state
+    function setActiveCategoryItem(categoryKey) {
         const items = categoryList.querySelectorAll('li');
         items.forEach(item => {
             item.classList.remove('bg-blue-50', 'border-blue-600', 'text-blue-700');
             item.classList.add('border-transparent');
         });
 
-        event.currentTarget.classList.remove('border-transparent');
-        event.currentTarget.classList.add('bg-blue-50', 'border-blue-600', 'text-blue-700');
+        if (!categoryKey) {
+            return;
+        }
+
+        const activeItem = categoryList.querySelector(`li[data-category-key="${categoryKey}"]`);
+        if (activeItem) {
+            activeItem.classList.remove('border-transparent');
+            activeItem.classList.add('bg-blue-50', 'border-blue-600', 'text-blue-700');
+        }
+    }
+
+    // Select a category and show its targets
+    function selectCategory(categoryKey, category, clickedItem) {
+        currentCategory = categoryKey;
+        currentTarget = null;
+        currentView = 'targets';
+
+        setActiveCategoryItem(categoryKey);
+        if (clickedItem) {
+            clickedItem.classList.remove('border-transparent');
+            clickedItem.classList.add('bg-blue-50', 'border-blue-600', 'text-blue-700');
+        }
+        backToTargetsBtn.classList.add('hidden');
 
         // Update header
         targetTitle.textContent = category.label;
@@ -334,6 +357,7 @@ focus:border-transparent outline-none transition-all shadow-inner"
     // Select a target and show its sub-targets
     function selectTarget(targetKey, targetLabel) {
         currentTarget = targetKey;
+        currentView = 'subtargets';
 
         const category = lookupData[currentCategory];
         const target = category.targets[targetKey];
@@ -341,9 +365,24 @@ focus:border-transparent outline-none transition-all shadow-inner"
         // Update header
         targetTitle.textContent = `${category.label} > ${targetLabel}`;
         targetDescription.textContent = 'Select a sub-target to copy its value.';
+        backToTargetsBtn.classList.remove('hidden');
 
         // Render sub-targets
         renderSubTargets(target.subTargets);
+    }
+
+    function navigateToTargets() {
+        if (!currentCategory || !lookupData[currentCategory]) {
+            return;
+        }
+
+        const category = lookupData[currentCategory];
+        currentTarget = null;
+        currentView = 'targets';
+        backToTargetsBtn.classList.add('hidden');
+        targetTitle.textContent = category.label;
+        targetDescription.textContent = 'Select a target to view its details.';
+        renderTargets(category.targets);
     }
 
     // Render sub-targets
@@ -384,7 +423,7 @@ focus:border-transparent outline-none transition-all shadow-inner"
         targetInput.classList.add('bg-gray-100', 'cursor-default');
 
         lookupPathDisplay.textContent = lookupPath;
-        lookupPathDisplay.classList.remove('hidden');
+        lookupPathDisplay.classList.remove('invisible');
         clearLookupBtn.classList.remove('hidden');
 
         isLookupLocked = true;
@@ -397,7 +436,7 @@ focus:border-transparent outline-none transition-all shadow-inner"
 
         targetInput.value = previousManualValue;
         lookupPathDisplay.textContent = '';
-        lookupPathDisplay.classList.add('hidden');
+        lookupPathDisplay.classList.add('invisible');
         clearLookupBtn.classList.add('hidden');
 
         isLookupLocked = false;
@@ -452,7 +491,7 @@ focus:border-transparent outline-none transition-all shadow-inner"
 
     // Search filter
     detailSearchInput.addEventListener('input', () => {
-        if (currentCategory) {
+        if (currentCategory && currentView === 'targets') {
             const category = lookupData[currentCategory];
             renderTargets(category.targets);
         }
@@ -470,6 +509,40 @@ focus:border-transparent outline-none transition-all shadow-inner"
         dialog.classList.remove('hidden');
         backdrop.classList.remove('hidden');
 
+        detailSearchInput.value = '';
+
+        if (currentCategory && lookupData[currentCategory]) {
+            const category = lookupData[currentCategory];
+            setActiveCategoryItem(currentCategory);
+
+            if (currentTarget && category.targets[currentTarget]) {
+                const target = category.targets[currentTarget];
+                targetTitle.textContent = `${category.label} > ${target.label}`;
+                targetDescription.textContent = 'Select a sub-target to copy its value.';
+                backToTargetsBtn.classList.remove('hidden');
+                currentView = 'subtargets';
+                renderSubTargets(target.subTargets);
+            } else {
+                targetTitle.textContent = category.label;
+                targetDescription.textContent = 'Select a target to view its details.';
+                backToTargetsBtn.classList.add('hidden');
+                currentTarget = null;
+                currentView = 'targets';
+                renderTargets(category.targets);
+            }
+        } else {
+            currentView = 'targets';
+            setActiveCategoryItem(null);
+            backToTargetsBtn.classList.add('hidden');
+            targetTitle.textContent = 'Select a Category';
+            targetDescription.textContent = 'Choose a category to view available targets.';
+            targetListContainer.innerHTML = `
+                <div class="h-full flex items-center justify-center text-gray-400">
+                    <p>Select a category to view available targets</p>
+                </div>
+            `;
+        }
+
         // Trigger animation reflow
         requestAnimationFrame(() => {
             dialog.classList.add('fade-enter-active');
@@ -484,8 +557,6 @@ focus:border-transparent outline-none transition-all shadow-inner"
         setTimeout(() => {
             dialog.classList.add('hidden');
             backdrop.classList.add('hidden');
-            currentCategory = null;
-            currentTarget = null;
         }, 200); // Wait for transition to end before hiding
     }
 
