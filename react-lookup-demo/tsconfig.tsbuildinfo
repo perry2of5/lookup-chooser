@@ -1,0 +1,1 @@
+{"root":["./src/app.test.tsx","./src/app.tsx","./src/main.tsx","./src/components/lookupinput.test.tsx","./src/components/lookupinput.tsx","./src/pages/connectionformpage.test.tsx","./src/pages/connectionformpage.tsx","./src/services/lookupservice.ts","./src/services/stublookupservice.test.ts","./src/services/stublookupservice.ts","./src/test/setup.ts"],"version":"5.9.3"}

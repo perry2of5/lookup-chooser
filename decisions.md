@@ -1,5 +1,9 @@
  # Implementation Decisions
 
+## Copilot Run Policy
+- For repository-wide run requirements, see [.github/copilot-instructions.md](.github/copilot-instructions.md).
+- Maintainers should review and follow that file for every implementation run.
+
 ## Dialog Behavior
 - [x] Close on backdrop click vs. require explicit action
 - [ ] Animation duration (currently 200ms) - tune for perceived performance
@@ -17,7 +21,7 @@
 
 ## Search Functionality
 - [x] Filter logic: substring match, case-insensitive (default)
-- [ ] Debounce search input (ms threshold)
+- [x] Debounce search input (ms threshold)
 - [ ] Highlight matched text in results
 - [x] "No results" state messaging
 
@@ -27,8 +31,8 @@
 - [x] Allow clearing selected value from main control
 
 ## Keyboard Navigation
-- [ ] Arrow keys to navigate result list
-- [ ] Tab order: input → lookup button → dialog elements
+- [x] Arrow keys to navigate result list
+- [x] Tab order: input → lookup button → dialog elements
 - [x] Escape closes dialog (implemented)
 
 ## Responsive Design
@@ -123,3 +127,53 @@ to prevent browser default styles from breaking the clean visual design.
 ### 14. Stable Control Height Across States
 *   **Decision:** The lookup path row under the input always reserves vertical space and toggles visibility instead of entering/leaving layout flow.
 *   **Rationale:** Prevents the input/control block from shifting height when toggling between manual and lookup-locked states.
+
+## React Component Decisions (March 2026)
+
+### 15. Service Abstraction Boundary
+*   **Decision:** React input components depend on a `LookupService` interface rather than concrete data sources.
+*   **Rationale:** Keeps UI logic testable and allows swapping stub, API-backed, or mocked implementations without changing component code.
+
+### 16. Controlled Input Value Model
+*   **Decision:** Value shape is structured as `{ source, value, lookupPath }` where source is `manual` or `lookup`.
+*   **Rationale:** Preserves provenance for submitted values and supports clear UI states (editable/manual vs. locked/lookup).
+
+### 17. React Dialog Behavior Parity
+*   **Decision:** React dialog behavior is kept consistent with prior HTML implementation for the following items:
+    *   Close via backdrop click and Escape key.
+    *   Auto-focus search on open.
+    *   Reopen with prior category/target context and allow Back to targets.
+*   **Rationale:** Maintains predictable UX while moving from static HTML to reusable component architecture.
+
+### 18. Clear Action Restores Previous Manual Input
+*   **Decision:** Clearing a lookup value restores the previous manual value instead of forcing empty text.
+*   **Rationale:** Prevents accidental data loss when users temporarily switch to lookup mode.
+
+### 19. Category Badge Counts in React
+*   **Decision:** Category count badges are resolved per category from service target counts filtered by current hints.
+*   **Rationale:** Avoids misleading counts and keeps badges aligned with what users can actually select.
+
+### 20. React Test Coverage Scope
+*   **Decision:** Added tests for critical behavior paths:
+    *   Manual typing for controlled input.
+    *   Lookup selection and lookup path payload emission.
+    *   Restore previous manual value on clear.
+    *   Search auto-focus on open.
+    *   Backdrop and Escape close behavior.
+    *   No-results state messaging.
+*   **Rationale:** These are high-risk interaction paths that commonly regress during UI refactors.
+
+### 21. Hint Interpretation: Ranking, Not Filtering
+*   **Decision:** In dialog browsing, all categories, targets, and sub-targets are displayed. Hints are used to choose likely defaults, not to hide options.
+*   **Rationale:** Preserves discoverability while still guiding users toward probable selections.
+
+### 22. Hierarchical Focus Progression
+*   **Decision:** Focus moves deeper as users choose category and target:
+    *   Open (no prior lookup): focus category list with likely category selected.
+    *   Select category: focus likely/first target.
+    *   Select target: focus likely/first sub-target.
+*   **Rationale:** Reduces keystrokes and keeps keyboard workflows aligned with visual hierarchy.
+
+### 23. Reopen and Left-Arrow Up Navigation
+*   **Decision:** If a lookup value is already selected, dialog reopens at the selected sub-target; `ArrowLeft` moves up from sub-target to target, then target to category.
+*   **Rationale:** Supports quick reselection and predictable directional navigation.
