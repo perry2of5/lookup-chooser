@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+
+        /* Custom Scrollbar styling for the specific lists to maintain a clean look */
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-track { background: transparent; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+        .custom-scroll::-webkit-scrollbar-thumb:hover { background-color: #94a3b8; }
+
+        /* Animation utilities */
+        .fade-enter { opacity: 0; transform: scale(0.95); pointer-events: none; }
+        .fade-enter-active {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Sub-target indicator */
+        .has-subtargets::after {
+            content: '';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background-color: #cbd5e1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-6">
+
+<!-- Main Application Container -->
+<main class="w-full max-w-5xl mx-auto animate-in fade-in duration-500">
+
+    <!-- Section: Form Entry -->
+    <section class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+        <div class="p-8">
+            <header class="mb-6 border-b border-gray-100 pb-4">
+                <h1 class="text-2xl font-bold text-gray-900">Edit Employee Record</h1>
+                <p class="text-sm text-gray-500 mt-1">Configure assignment details and selection parameters.</p>
+            </header>
+
+            <!-- Input Group: Step 1 (Value Selection) -->
+            <div class="mb-2">
+                <label for="targetInput" class="block text-sm font-semibold text-gray-700 mb-2">Target Assignment</label>
+
+                <div class="relative flex items-center w-full max-w-xl shadow-sm rounded-lg overflow-hidden ring-1 ring-gray-300 focus-within:ring-2
+focus-within:ring-blue-500 transition-shadow">
+
+                    <!-- Input Field -->
+                    <input
+                        type="text"
+                        id="targetInput"
+                        class="w-full pl-4 pr-4 py-3 bg-white border-none outline-none text-gray-700 placeholder-gray-400 text-base"
+                        placeholder="Enter Value or Select Lookup..."
+                    >
+
+                    <button
+                        type="button"
+                        id="clearLookupBtn"
+                        onclick="clearLookupSelection()"
+                        class="hidden text-gray-400 hover:text-gray-700 hover:bg-gray-200 rounded-full p-1 mr-2 transition-colors"
+                        aria-label="Clear lookup selection"
+                        title="Clear lookup selection"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+
+                    <!-- Toggle Button -->
+                    <button
+                        onclick="toggleLookupDialog()"
+                        id="lookupBtn"
+                        class="bg-white hover:bg-gray-50 text-gray-600 font-medium py-3 px-6 border-l border-gray-200 transition-colors flex items-center
+gap-2 focus:outline-none outline-none z-10 relative"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <span class="uppercase text-xs tracking-wide">Lookup</span>
+                    </button>
+                </div>
+                <p id="lookupPathDisplay" class="hidden mt-2 text-xs text-gray-500"></p>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- Master-Detail Dialog Overlay -->
+<div id="backdrop" onclick="closeLookupDialog()" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm hidden z-50 transition-opacity duration-300"></div>
+
+<!-- The Modal Container (Centered via fixed positioning) -->
+<div
+    id="lookupDialog"
+    class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90%] max-w-[768px] h-[550px] bg-white rounded-xl shadow-2xl ring-1 ring-black
+ring-opacity-5 hidden z-50 flex overflow-hidden fade-enter"
+    role="dialog"
+    aria-modal="true"
+>
+
+    <!-- MASTER COLUMN (Left: Categories & Targets) -->
+    <aside class="w-64 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
+        <!-- Header -->
+        <div class="p-4 border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm">
+            <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wider">Categories</h3>
+        </div>
+
+        <!-- Scrollable List -->
+        <ul id="categoryList" class="overflow-y-auto flex-1 custom-scroll py-2 space-y-1">
+            <!-- Categories will be dynamically populated -->
+        </ul>
+    </aside>
+
+    <!-- DETAIL COLUMN (Right: Sub-targets) -->
+    <section class="w-[calc(100%-16rem)] flex flex-col h-full bg-white relative">
+
+        <!-- Header & Search Bar Area -->
+        <header class="p-5 border-b border-gray-100 bg-white sticky top-0 z-20 shadow-sm flex flex-col gap-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h3 id="targetTitle" class="text-lg font-bold text-gray-800 leading-tight">Select a Category</h3>
+                    <p id="targetDescription" class="text-xs text-gray-500 mt-1">Choose a category to view available targets.</p>
+                </div>
+                <button onclick="closeLookupDialog()" class="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-full transition-all"
+aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- STEP 2 SEARCH FUNCTIONALITY -->
+            <div class="relative w-full max-w-md mx-auto lg:mx-0">
+                <input
+                    type="text"
+                    id="detailSearchInput"
+                    class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:bg-white focus:ring-2 focus:ring-blue-500
+focus:border-transparent outline-none transition-all shadow-inner"
+                    placeholder="Filter targets..."
+                >
+                <div class="absolute left-3 top-2.5 pointer-events-none">
+                    <svg class="h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </div>
+            </div>
+        </header>
+
+        <!-- Result List Area -->
+        <div id="targetListContainer" class="flex-1 overflow-y-auto custom-scroll p-2">
+            <div class="h-full flex items-center justify-center text-gray-400">
+                <p>Select a category to view available targets</p>
+            </div>
+        </div>
+
+    </section>
+</div>
+
+<script>
+    // Lookup Data Structure: category -> target -> sub-targets
+    const lookupData = {
+        'secrets': {
+            label: 'Secrets',
+            icon: '🔒',
+            targets: {
+                'secret-name-1': {
+                    label: 'Secret Name 1',
+                    description: 'Application database credentials',
+                    subTargets: [
+                        { id: 'username', label: 'Username', value: 'app_user' },
+                        { id: 'password', label: 'Password', value: '********', type: 'password' }
+                    ]
+                },
+                's3secret': {
+                    label: 'S3 Secret',
+                    description: 'AWS S3 bucket access credentials',
+                    subTargets: [
+                        { id: 'username', label: 'Access Key ID', value: 'AKIAIOSFODNN7EXAMPLE' },
+                        { id: 'password', label: 'Secret Access Key', value: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY', type: 'password' }
+                    ]
+                },
+                'client-ssh-server': {
+                    label: 'Client SSH Server',
+                    description: 'SSH credentials for client server access',
+                    subTargets: [
+                        { id: 'username', label: 'Username', value: 'ssh_user' },
+                        { id: 'password', label: 'Password', value: '********', type: 'password' },
+                        { id: 'ssh-key', label: 'SSH Private Key', value: '-----BEGIN RSA PRIVATE KEY-----\nMIIEpAIBAAKCAQEA0Z3VS...', type: 'secret' }
+                    ]
+                }
+            }
+        },
+        'general': {
+            label: 'General',
+            icon: '📁',
+            targets: {
+                'host-connection-1': {
+                    label: 'Production Server',
+                    description: 'Primary production host connection',
+                    subTargets: [
+                        { id: 'hostname', label: 'Hostname', value: 'prod.example.com' },
+                        { id: 'port', label: 'Port', value: '22' },
+                        { id: 'default-path', label: 'Default Path', value: '/var/www/html' }
+                    ]
+                },
+                'host-connection-2': {
+                    label: 'Staging Server',
+                    description: 'Staging environment host connection',
+                    subTargets: [
+                        { id: 'hostname', label: 'Hostname', value: 'staging.example.com' },
+                        { id: 'port', label: 'Port', value: '22' },
+                        { id: 'default-path', label: 'Default Path', value: '/var/www/staging' }
+                    ]
+                },
+                'host-connection-3': {
+                    label: 'Development Server',
+                    description: 'Local development host connection',
+                    subTargets: [
+                        { id: 'hostname', label: 'Hostname', value: 'localhost' },
+                        { id: 'port', label: 'Port', value: '2222' },
+                        { id: 'default-path', label: 'Default Path', value: '/Users/developer/projects/app' }
+                    ]
+                }
+            }
+        }
+    };
+
+    let currentCategory = null;
+    let currentTarget = null;
+    let isLookupLocked = false;
+    let previousManualValue = '';
+
+    const dialog = document.getElementById('lookupDialog');
+    const backdrop = document.getElementById('backdrop');
+    const targetInput = document.getElementById('targetInput');
+    const clearLookupBtn = document.getElementById('clearLookupBtn');
+    const lookupPathDisplay = document.getElementById('lookupPathDisplay');
+    const categoryList = document.getElementById('categoryList');
+    const targetTitle = document.getElementById('targetTitle');
+    const targetDescription = document.getElementById('targetDescription');
+    const targetListContainer = document.getElementById('targetListContainer');
+    const detailSearchInput = document.getElementById('detailSearchInput');
+
+    // Initialize category list
+    function initCategoryList() {
+        categoryList.innerHTML = '';
+
+        Object.entries(lookupData).forEach(([key, category]) => {
+            const li = document.createElement('li');
+            li.className = 'px-4 py-3 hover:bg-gray-100 cursor-pointer text-gray-600 group flex justify-between items-center transition-colors border-r-4 border-transparent has-subtargets';
+            li.innerHTML = `
+                <span class="flex items-center gap-2">
+                    <span>${category.icon}</span>
+                    <span>${category.label}</span>
+                </span>
+                <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full text-xs font-semibold">${Object.keys(category.targets).length}</span>
+            `;
+            li.onclick = () => selectCategory(key, category);
+            categoryList.appendChild(li);
+        });
+    }
+
+    // Select a category and show its targets
+    function selectCategory(categoryKey, category) {
+        currentCategory = categoryKey;
+
+        // Update active state
+        const items = categoryList.querySelectorAll('li');
+        items.forEach(item => {
+            item.classList.remove('bg-blue-50', 'border-blue-600', 'text-blue-700');
+            item.classList.add('border-transparent');
+        });
+
+        event.currentTarget.classList.remove('border-transparent');
+        event.currentTarget.classList.add('bg-blue-50', 'border-blue-600', 'text-blue-700');
+
+        // Update header
+        targetTitle.textContent = category.label;
+        targetDescription.textContent = 'Select a target to view its details.';
+
+        // Render targets
+        renderTargets(category.targets);
+    }
+
+    // Render targets for a category
+    function renderTargets(targets) {
+        targetListContainer.innerHTML = '';
+
+        const filteredTargets = Object.entries(targets).filter(([key, target]) =>
+            target.label.toLowerCase().includes(detailSearchInput.value.toLowerCase()) ||
+            target.description.toLowerCase().includes(detailSearchInput.value.toLowerCase())
+        );
+
+        if (filteredTargets.length === 0) {
+            targetListContainer.innerHTML = `
+                <div class="h-full flex items-center justify-center text-gray-400">
+                    <p>No targets found matching your search</p>
+                </div>
+            `;
+            return;
+        }
+
+        filteredTargets.forEach(([key, target]) => {
+            const li = document.createElement('li');
+            li.className = 'px-4 py-3 hover:bg-blue-50 group cursor-pointer border rounded-lg transition-all duration-150 flex items-center justify-between border-gray-100 hover:border-blue-200';
+            li.innerHTML = `
+                <div>
+                    <p class="font-medium text-gray-800">${target.label}</p>
+                    <p class="text-xs text-gray-400">${target.description}</p>
+                </div>
+                <span class="opacity-0 group-hover:opacity-100 bg-blue-600 text-white p-1 rounded-md transition-opacity shadow-sm" title="Select">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                </span>
+            `;
+            li.onclick = () => selectTarget(key, target.label);
+            targetListContainer.appendChild(li);
+        });
+    }
+
+    // Select a target and show its sub-targets
+    function selectTarget(targetKey, targetLabel) {
+        currentTarget = targetKey;
+
+        const category = lookupData[currentCategory];
+        const target = category.targets[targetKey];
+
+        // Update header
+        targetTitle.textContent = `${category.label} > ${targetLabel}`;
+        targetDescription.textContent = 'Select a sub-target to copy its value.';
+
+        // Render sub-targets
+        renderSubTargets(target.subTargets);
+    }
+
+    // Render sub-targets
+    function renderSubTargets(subTargets) {
+        targetListContainer.innerHTML = '';
+
+        subTargets.forEach(subTarget => {
+            const li = document.createElement('li');
+            li.className = 'px-4 py-3 hover:bg-blue-50 group cursor-pointer border rounded-lg transition-all duration-150 flex items-center justify-between border-gray-100 hover:border-blue-200';
+
+            const displayValue = subTarget.type === 'password' ? '••••••••' :
+                               subTarget.type === 'secret' ? '[Hidden]' : subTarget.value;
+
+            li.innerHTML = `
+                <div>
+                    <p class="font-medium text-gray-800">${subTarget.label}</p>
+                    <p class="text-xs text-gray-400 font-mono">${displayValue}</p>
+                </div>
+                <span class="opacity-0 group-hover:opacity-100 bg-blue-600 text-white p-1 rounded-md transition-opacity shadow-sm" title="Copy">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                </span>
+            `;
+            li.onclick = () => copySubTarget(subTarget.id, subTarget.value);
+            targetListContainer.appendChild(li);
+        });
+    }
+
+    function applyLookupSelection(value, lookupPath) {
+        if (!isLookupLocked) {
+            previousManualValue = targetInput.value;
+        }
+
+        targetInput.value = value;
+        targetInput.readOnly = true;
+        targetInput.classList.remove('bg-white');
+        targetInput.classList.add('bg-gray-100', 'cursor-default');
+
+        lookupPathDisplay.textContent = lookupPath;
+        lookupPathDisplay.classList.remove('hidden');
+        clearLookupBtn.classList.remove('hidden');
+
+        isLookupLocked = true;
+    }
+
+    function clearLookupSelection() {
+        targetInput.readOnly = false;
+        targetInput.classList.remove('bg-gray-100', 'cursor-default');
+        targetInput.classList.add('bg-white');
+
+        targetInput.value = previousManualValue;
+        lookupPathDisplay.textContent = '';
+        lookupPathDisplay.classList.add('hidden');
+        clearLookupBtn.classList.add('hidden');
+
+        isLookupLocked = false;
+        targetInput.focus();
+    }
+
+    // Copy sub-target value to clipboard and set lookup reference
+    function copySubTarget(id, value) {
+        // Copy the actual value to clipboard
+        navigator.clipboard.writeText(value).then(() => {
+            showNotification(`Copied ${id} to clipboard`);
+        });
+
+        // Set the lookup reference path in the main input field
+        const category = lookupData[currentCategory];
+        const target = category.targets[currentTarget];
+        const subTarget = target.subTargets.find(st => st.id === id);
+
+        const lookupPath = `lookup:${category.label}/${target.label}/${subTarget.label}`;
+        applyLookupSelection(value, lookupPath);
+
+        // Visual feedback animation on the main input
+        targetInput.classList.add('text-green-600', 'transition-colors');
+        setTimeout(() => targetInput.classList.remove('text-green-600'), 500);
+
+        closeLookupDialog();
+    }
+
+    // Select full target and populate main input with lookup reference
+    function selectValue(fullPath) {
+        const input = document.getElementById('targetInput');
+        input.value = fullPath;
+
+        // Visual feedback animation on the main input
+        input.classList.add('text-green-600', 'transition-colors');
+        setTimeout(() => input.classList.remove('text-green-600'), 500);
+
+        closeLookupDialog();
+    }
+
+    // Show notification
+    function showNotification(message) {
+        const notification = document.createElement('div');
+        notification.className = 'fixed bottom-4 right-4 bg-gray-900 text-white px-4 py-2 rounded-lg shadow-lg fade-enter-active';
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.remove();
+        }, 2000);
+    }
+
+    // Search filter
+    detailSearchInput.addEventListener('input', () => {
+        if (currentCategory) {
+            const category = lookupData[currentCategory];
+            renderTargets(category.targets);
+        }
+    });
+
+    function toggleLookupDialog() {
+        if (dialog.classList.contains('hidden')) {
+            openLookupDialog();
+        } else {
+            closeLookupDialog();
+        }
+    }
+
+    function openLookupDialog() {
+        dialog.classList.remove('hidden');
+        backdrop.classList.remove('hidden');
+
+        // Trigger animation reflow
+        requestAnimationFrame(() => {
+            dialog.classList.add('fade-enter-active');
+            // Optional: Focus the search input for immediate interaction
+            document.getElementById('detailSearchInput').focus();
+        });
+    }
+
+    function closeLookupDialog() {
+        dialog.classList.remove('fade-enter-active');
+
+        setTimeout(() => {
+            dialog.classList.add('hidden');
+            backdrop.classList.add('hidden');
+            currentCategory = null;
+            currentTarget = null;
+        }, 200); // Wait for transition to end before hiding
+    }
+
+    // Close dialog on Escape key press
+    document.addEventListener('keydown', function(event) {
+        if (event.key === "Escape" && !dialog.classList.contains('hidden')) {
+            closeLookupDialog();
+        }
+    });
+
+    // Initialize on load
+    initCategoryList();
+</script>
+
+</body>
+</html>

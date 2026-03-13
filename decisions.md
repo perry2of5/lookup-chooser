@@ -1,4 +1,45 @@
- summary of the design decisions and architectural choices made for the implementation so far:
+ # Implementation Decisions
+
+## Dialog Behavior
+- [ ] Close on backdrop click vs. require explicit action
+- [ ] Animation duration (currently 200ms) - tune for perceived performance
+- [ ] Focus management: auto-focus search input on open
+
+## Data Loading
+- [ ] Static data vs. API fetch for categories/items
+- [ ] Loading states: skeleton screens or spinner
+- [ ] Error handling: toast notification or inline message
+
+## Category Switching
+- [ ] Preload all categories or lazy-load on selection
+- [ ] Preserve search filter when switching categories
+- [ ] Show item count badge per category (currently hardcoded)
+
+## Search Functionality
+- [ ] Filter logic: substring match, case-insensitive (default)
+- [ ] Debounce search input (ms threshold)
+- [ ] Highlight matched text in results
+- [ ] "No results" state messaging
+
+## Value Selection
+- [ ] Click vs. Enter key to select (currently click only)
+- [ ] Return full object or display string to input
+- [ ] Allow clearing selected value from dialog
+
+## Keyboard Navigation
+- [ ] Arrow keys to navigate result list
+- [ ] Tab order: input → lookup button → dialog elements
+- [ ] Escape closes dialog (implemented)
+
+## Responsive Design
+- [ ] Mobile: full-screen dialog vs. current fixed size
+- [ ] Breakpoint for master-detail layout (stack on small screens)
+- [ ] Touch-friendly tap targets (44px minimum)
+
+## Accessibility
+- [ ] ARIA labels for interactive elements
+- [ ] Screen reader announcements on state changes
+- [ ] Visible focus indicators beyond default outline
 
 ### 1. Container Hierarchy & Semantics
 *   **Decision:** Replaced generic wrapper `<div>`s with semantic HTML5 tags (`<main>`, `<section>`, `<aside>`, `<header>`).
@@ -38,3 +79,33 @@ lists, backdrop blurs, and centered modals.
 heavy frameworks.
 *   **Rationale:** Provides maximum control over the styling and animation timing without dependency overhead. Custom scrollbars were added to the lists
 to prevent browser default styles from breaking the clean visual design.
+
+## Lookup Locking Behavior (March 2026)
+
+### 7. Main Input State: Manual vs. Lookup-Locked
+*   **Decision:** The main input has two states:
+    *   **Manual mode:** White background, editable text.
+    *   **Lookup-locked mode:** Light gray background, read-only text, clear (`X`) button visible.
+*   **Rationale:** Users can clearly see when a value is sourced from lookup data versus manually entered text.
+
+### 8. What Displays After Lookup Selection
+*   **Decision:** After selecting a lookup sub-target:
+    *   Input displays the resolved lookup value.
+    *   A gray line below the input displays the lookup reference path in format `lookup:Category/Target/Sub-Target`.
+*   **Rationale:** Keeps both runtime value and source reference visible for validation and debugging.
+
+### 9. Clearing a Lookup Selection
+*   **Decision:** Clicking the `X` button:
+    *   Removes lookup lock.
+    *   Hides lookup path display.
+    *   Restores previous manual input value.
+    *   Returns input to editable white-background state.
+*   **Rationale:** Provides reversible lookup selection without losing user-entered text from before lookup mode.
+
+### 10. Interaction Rules
+*   **Decision:** The Lookup button always remains active, even while locked.
+*   **Rationale:** Users can replace one lookup selection with another without clearing first.
+
+### 11. Event Handling Safety
+*   **Decision:** Row click handlers in dynamic lists use JavaScript closures (`li.onclick = ...`) instead of inline HTML `onclick` strings.
+*   **Rationale:** Avoids escaping bugs for values containing quotes/newlines (for example SSH key material).
